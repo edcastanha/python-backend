@@ -12,7 +12,7 @@ services:
     restart: always
 
   mongo:
-    container_name: cdp-db-mongo
+    container_name: db-mongo
     image: mongo:latest
     restart: always
     ports:
@@ -21,7 +21,7 @@ services:
       - ./db_data/mongo:/data/db
 
   admin:
-    container_name: cdp-micros-admin
+    container_name: micros-admin
     build:
       dockerfile: Dockerfile.dev
       context: ./micros/admin
