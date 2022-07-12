@@ -1,0 +1,83 @@
+version: '3.7'
+
+services:
+  nginx:
+    container_name: service-nginx
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./service/nginx
+    ports:
+      - 3050:80
+      - 8888:8888
+    restart: always
+
+  mongo:
+    container_name: db-mongo
+    image: mongo:latest
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - ./db_data/mongo:/data/db
+
+  admin:
+    container_name: micros-admin
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./micros/admin
+    volumes:
+      - ./micros/admin:/usr/src/app
+    depends_on:
+      - kafka
+      - mongo
+    env_file: 
+      - ./micros/admin/.env.dev
+
+  postgres-db:
+    container_name: cdp-db-auth
+    image: postgres:13.6
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=cdp_auth_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=1234
+    volumes:
+      - ./db_data/postgres/auth:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "cdp_auth_db", "-U", "admin"]
+      interval: 50s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    container_name: cdp-connectors-redis
+    image: bitnami/redis:latest
+    ports:
+      - 6379:6379
+    environment:
+      - REDIS_PASSWORD=password123
+  
+  # zookeeper:
+  #   container_name: connectors-zookeeper
+  #   extends:
+  #     file: ./connectors/kafka-test/kafka.yml
+  #     service: zookeeper
+
+  # kafka:
+  #   container_name: connectors-kafka
+  #   extends:
+  #     file: ./connectors/kafka-test/kafka.yml
+  #     service: kafka
+  #   depends_on:
+  #     - zookeeper
+
+  # control-center:
+  #   container_name: connectors-control-center
+  #   extends:
+  #     file: ./connectors/kafka-test/kafka.yml
+  #     service: control-center
+  #   depends_on:
+  #     - kafka
